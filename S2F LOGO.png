@@ -1,0 +1,227 @@
+// Sketch2Fly — design tokens + shared primitives
+// Direction B "Hangar" — dark blueprint ground, teal accents.
+
+const TOKENS = {
+  // surfaces
+  bg:       '#0B1518',
+  bgRaised: '#0F1C20',
+  bgPanel:  '#13262B',
+  bgPanel2: '#1A3035',
+  // ink
+  fg:       '#E8ECEE',
+  fgSoft:   'rgba(232,236,238,0.72)',
+  fgMute:   'rgba(232,236,238,0.5)',
+  fgFaint:  'rgba(232,236,238,0.32)',
+  // brand
+  tealDeep:  '#1F4D5C',
+  teal:      '#2F8F9D',
+  tealLight: '#5FB8C4',
+  tealGlow:  'rgba(95,184,196,0.18)',
+  // grays
+  slate:     '#8A8E91',
+  // rules
+  rule:      'rgba(232,236,238,0.12)',
+  ruleSoft:  'rgba(232,236,238,0.06)',
+  ruleStrong:'rgba(232,236,238,0.22)',
+};
+
+const FONT_DISPLAY = '"Chakra Petch", "Rajdhani", sans-serif';
+const FONT_MONO    = '"JetBrains Mono", ui-monospace, monospace';
+
+// Chamfered clip-path — visual rhyme with the logo letterforms.
+const chamfer = (size = 10) => ({
+  clipPath: `polygon(${size}px 0, 100% 0, 100% calc(100% - ${size}px), calc(100% - ${size}px) 100%, 0 100%, 0 ${size}px)`,
+});
+
+// One-time global CSS injection
+if (typeof document !== 'undefined' && !document.getElementById('s2f-styles')) {
+  const s = document.createElement('style');
+  s.id = 's2f-styles';
+  s.textContent = `
+    :root {
+      --bg: ${TOKENS.bg};
+      --fg: ${TOKENS.fg};
+      --teal: ${TOKENS.teal};
+      --teal-deep: ${TOKENS.tealDeep};
+      --teal-light: ${TOKENS.tealLight};
+    }
+    html, body { margin: 0; padding: 0; background: ${TOKENS.bg}; color: ${TOKENS.fg}; }
+    body { font-family: ${FONT_DISPLAY}; -webkit-font-smoothing: antialiased; }
+    * { box-sizing: border-box; }
+    a { color: inherit; text-decoration: none; }
+    button { font-family: inherit; }
+    ::selection { background: ${TOKENS.teal}; color: ${TOKENS.bg}; }
+
+    .s2f-blueprint-bg {
+      background-image:
+        linear-gradient(rgba(95,184,196,0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(95,184,196,0.045) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+    .s2f-mono { font-family: ${FONT_MONO}; letter-spacing: 0.12em; }
+    .s2f-eyebrow {
+      font-family: ${FONT_MONO}; font-size: 11px; letter-spacing: 0.22em;
+      color: ${TOKENS.tealLight}; text-transform: uppercase;
+    }
+    .s2f-rule { background: ${TOKENS.rule}; height: 1px; width: 100%; }
+
+    .s2f-btn {
+      font-family: ${FONT_DISPLAY}; font-weight: 600;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      padding: 14px 24px; font-size: 13px; cursor: pointer;
+      border: none; display: inline-flex; align-items: center; gap: 12px;
+      transition: background .18s, color .18s, transform .18s;
+    }
+    .s2f-btn-primary { background: ${TOKENS.teal}; color: ${TOKENS.bg}; }
+    .s2f-btn-primary:hover { background: ${TOKENS.tealLight}; }
+    .s2f-btn-ghost { background: transparent; color: ${TOKENS.fg}; border: 1px solid ${TOKENS.ruleStrong}; }
+    .s2f-btn-ghost:hover { border-color: ${TOKENS.tealLight}; color: ${TOKENS.tealLight}; }
+    .s2f-btn-ghost-light { background: transparent; color: ${TOKENS.fgSoft}; border: 1px solid ${TOKENS.rule}; }
+
+    .s2f-link {
+      color: ${TOKENS.fgSoft}; transition: color .15s;
+      cursor: pointer;
+    }
+    .s2f-link:hover { color: ${TOKENS.tealLight}; }
+
+    /* tick corner decorations */
+    .s2f-corner-box { position: relative; }
+    .s2f-corner-box::before, .s2f-corner-box::after,
+    .s2f-corner-box > .corner-tl, .s2f-corner-box > .corner-tr,
+    .s2f-corner-box > .corner-bl, .s2f-corner-box > .corner-br { }
+
+    @keyframes s2f-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.35; }
+    }
+    .s2f-pulse { animation: s2f-pulse 2.4s ease-in-out infinite; }
+
+    @keyframes s2f-trace {
+      from { stroke-dashoffset: 800; }
+      to   { stroke-dashoffset: 0; }
+    }
+    @keyframes s2f-fly {
+      0%   { offset-distance: 0%; }
+      100% { offset-distance: 100%; }
+    }
+
+    /* hover-reveal pattern */
+    .s2f-hover-reveal { position: relative; }
+    .s2f-hover-reveal .reveal {
+      opacity: 0; transform: translateY(6px);
+      transition: opacity .25s, transform .25s;
+    }
+    .s2f-hover-reveal:hover .reveal { opacity: 1; transform: none; }
+
+    /* numeric counter style for big stats */
+    .s2f-bignum {
+      font-family: ${FONT_DISPLAY}; font-weight: 600;
+      letter-spacing: -0.02em; line-height: 1;
+    }
+
+    /* subtle scanline for media frames */
+    .s2f-scanline::after {
+      content: ''; position: absolute; inset: 0; pointer-events: none;
+      background: repeating-linear-gradient(0deg, rgba(255,255,255,0.02) 0 1px, transparent 1px 3px);
+    }
+  `;
+  document.head.appendChild(s);
+}
+
+// ─── Primitives ─────────────────────────────────────────────
+
+const Section = ({ id, label, idx, title, sub, children, dense, tone = 'default' }) => {
+  const bg = tone === 'raised' ? TOKENS.bgRaised : tone === 'panel' ? TOKENS.bgPanel : TOKENS.bg;
+  return (
+    <section id={id} data-screen-label={`${idx ? idx.padStart(2, '0') + ' ' : ''}${label || ''}`}
+      style={{
+        position: 'relative', background: bg, color: TOKENS.fg,
+        borderTop: `1px solid ${TOKENS.rule}`, padding: dense ? '64px 0' : '120px 0',
+      }}>
+      <div style={{ maxWidth: 1440, margin: '0 auto', padding: '0 56px' }}>
+        {(idx || label) && (
+          <div className="s2f-eyebrow" style={{ marginBottom: 14, display: 'flex', alignItems: 'center', gap: 12 }}>
+            {idx && <span style={{ color: TOKENS.fgFaint }}>§ {idx}</span>}
+            <span>{label}</span>
+            <span style={{ flex: 1, height: 1, background: TOKENS.rule, marginLeft: 8 }}></span>
+          </div>
+        )}
+        {title && (
+          <h2 style={{
+            margin: 0, fontSize: 64, fontWeight: 600, letterSpacing: '-0.025em',
+            lineHeight: 1.02, textWrap: 'balance', maxWidth: 1100,
+          }}>{title}</h2>
+        )}
+        {sub && (
+          <p style={{
+            marginTop: 22, fontSize: 18, lineHeight: 1.5, color: TOKENS.fgSoft,
+            maxWidth: 700,
+          }}>{sub}</p>
+        )}
+        {(title || sub) && <div style={{ height: 56 }}></div>}
+        {children}
+      </div>
+    </section>
+  );
+};
+
+const Eyebrow = ({ children, style }) => (
+  <div className="s2f-eyebrow" style={style}>{children}</div>
+);
+
+const Borrador = ({ label, h = '100%', tone = 'dark' }) => {
+  const bg = tone === 'dark' ? '#0E1518' : '#ECEEF0';
+  const stripe = tone === 'dark' ? 'rgba(95,184,196,0.06)' : 'rgba(31,36,38,0.05)';
+  const text = tone === 'dark' ? 'rgba(232,236,238,0.55)' : 'rgba(31,36,38,0.55)';
+  const border = tone === 'dark' ? 'rgba(95,184,196,0.18)' : 'rgba(31,36,38,0.14)';
+  return (
+    <div className="s2f-scanline" style={{
+      width: '100%', height: h, background: bg,
+      backgroundImage: `repeating-linear-gradient(135deg, ${stripe} 0 1px, transparent 1px 14px)`,
+      border: `1px solid ${border}`,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontFamily: FONT_MONO, fontSize: 10,
+      color: text, letterSpacing: '0.14em', textTransform: 'uppercase',
+      position: 'relative', overflow: 'hidden', whiteSpace: 'pre-line', textAlign: 'center',
+    }}>
+      <span style={{ position: 'absolute', top: 10, left: 12, fontSize: 9, opacity: 0.6 }}>BORRADOR</span>
+      <span style={{ position: 'absolute', top: 10, right: 12, fontSize: 9, opacity: 0.6 }}>[ MEDIA ]</span>
+      <span style={{ padding: '0 16px', lineHeight: 1.7 }}>{label}</span>
+      <CornerTicks tone={tone} />
+    </div>
+  );
+};
+
+const CornerTicks = ({ tone = 'dark' }) => {
+  const c = tone === 'dark' ? 'rgba(232,236,238,0.4)' : 'rgba(31,36,38,0.35)';
+  const base = (extra) => ({ position: 'absolute', width: 12, height: 12, ...extra });
+  return (
+    <>
+      <div style={base({ top: 0, left: 0, borderTop: `1px solid ${c}`, borderLeft: `1px solid ${c}` })}></div>
+      <div style={base({ top: 0, right: 0, borderTop: `1px solid ${c}`, borderRight: `1px solid ${c}` })}></div>
+      <div style={base({ bottom: 0, left: 0, borderBottom: `1px solid ${c}`, borderLeft: `1px solid ${c}` })}></div>
+      <div style={base({ bottom: 0, right: 0, borderBottom: `1px solid ${c}`, borderRight: `1px solid ${c}` })}></div>
+    </>
+  );
+};
+
+const Tag = ({ children, tone = 'teal', style }) => {
+  const colors = {
+    teal:  { bg: 'rgba(47,143,157,0.14)', fg: TOKENS.tealLight, bd: 'rgba(95,184,196,0.4)' },
+    mute:  { bg: 'rgba(232,236,238,0.06)', fg: TOKENS.fgSoft, bd: TOKENS.rule },
+  }[tone];
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: 8,
+      padding: '5px 11px', fontFamily: FONT_MONO, fontSize: 10,
+      letterSpacing: '0.18em', textTransform: 'uppercase',
+      background: colors.bg, color: colors.fg, border: `1px solid ${colors.bd}`,
+      ...chamfer(6), ...style,
+    }}>{children}</span>
+  );
+};
+
+Object.assign(window, {
+  TOKENS, FONT_DISPLAY, FONT_MONO, chamfer,
+  Section, Eyebrow, Borrador, CornerTicks, Tag,
+});
